@@ -184,31 +184,44 @@ public class CKDatabase {
     }
 
     public func perform(_ query: CKQuery, inZoneWith zoneID: CKRecordZone.ID?, resultsLimit: Int = CKQueryOperation.maximumResults, completionHandler: @escaping (Result<(matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?), Error>) -> Void) {
-        self.cancellable = CloudyKitConfig.urlSession.queryTaskPublisher(database: self, environment: CloudyKitConfig.environment, query: query, zoneID: zoneID, resultsLimit: resultsLimit)
-            .sink(receiveCompletion: { completion in
-                switch completion {
-                case .failure(let error):
-                    completionHandler(.failure(error))
-                case .finished:
-                    break
-                }
-            }, receiveValue: { result in
-                completionHandler(.success(result))
-            })
+        self.cancellable = CloudyKitConfig.urlSession.queryTaskPublisher(
+            database: self,
+            environment: CloudyKitConfig.environment,
+            query: query,
+            zoneID: zoneID,
+            resultsLimit: resultsLimit
+        )
+        .sink(receiveCompletion: { completion in
+            switch completion {
+            case .failure(let error):
+                completionHandler(.failure(error))
+            case .finished:
+                break
+            }
+        }, receiveValue: { result in
+            completionHandler(.success(result))
+        })
     }
 
     public func fetch(_ query: CKQuery, withCursor queryCursor: CKQueryOperation.Cursor, resultsLimit: Int = CKQueryOperation.maximumResults, completionHandler: @escaping @Sendable (Result<(matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?), Error>) -> Void) {
-        self.cancellable = CloudyKitConfig.urlSession.queryTaskPublisher(database: self, environment: CloudyKitConfig.environment, query: query, cursor: queryCursor,zoneID: nil)
-            .sink(receiveCompletion: { completion in
-                switch completion {
-                case .failure(let error):
-                    completionHandler(.failure(error))
-                case .finished:
-                    break
-                }
-            }, receiveValue: { result in
-                completionHandler(.success(result))
-            })
+        self.cancellable = CloudyKitConfig.urlSession.queryTaskPublisher(
+            database: self,
+            environment: CloudyKitConfig.environment,
+            query: query,
+            cursor: queryCursor,
+            zoneID: nil,
+            resultsLimit: resultsLimit
+        )
+        .sink(receiveCompletion: { completion in
+            switch completion {
+            case .failure(let error):
+                completionHandler(.failure(error))
+            case .finished:
+                break
+            }
+        }, receiveValue: { result in
+            completionHandler(.success(result))
+        })
     }
 }
 

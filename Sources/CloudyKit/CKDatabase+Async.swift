@@ -53,4 +53,30 @@ extension CKDatabase {
             }
         }
     }
+
+    public func records(matching query: CKQuery, inZoneWith zoneID: CKRecordZone.ID? = nil, resultsLimit: Int = CKQueryOperation.maximumResults) async throws -> (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?) {
+        try await withCheckedThrowingContinuation { contiunation in
+            perform(query, inZoneWith: zoneID, resultsLimit: resultsLimit) { result in
+                switch result {
+                case .success(let result):
+                    contiunation.resume(returning: result)
+                case .failure(let error):
+                    contiunation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    public func records(matching query: CKQuery, continuingMatchFrom queryCursor: CKQueryOperation.Cursor, resultsLimit: Int = CKQueryOperation.maximumResults) async throws -> (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?) {
+        try await withCheckedThrowingContinuation { contiunation in
+            fetch(query, withCursor: queryCursor, resultsLimit: resultsLimit) { result in
+                switch result {
+                case .success(let result):
+                    contiunation.resume(returning: result)
+                case .failure(let error):
+                    contiunation.resume(throwing: error)
+                }
+            }
+        }
+    }
 }
