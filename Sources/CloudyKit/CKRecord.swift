@@ -96,6 +96,12 @@ extension CKRecord.ID: Equatable {
     }
 }
 
+extension CKRecord.ID: Hashable {
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(recordName)
+    }
+}
+
 extension CKRecord.ID: CustomStringConvertible {
     
     public var description: String {
