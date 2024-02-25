@@ -95,13 +95,28 @@ extension NetworkSession {
             }.eraseToAnyPublisher()
     }
     
-    internal func recordsTaskPublisher(for request: URLRequest) -> AnyPublisher<[CKRecord], Error> {
+    internal func recordsTaskPublisher(for request: URLRequest) -> AnyPublisher<(matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?), Error> {
         return self.successfulDataTaskPublisher(for: request)
             .decode(type: CKWSRecordResponse.self, decoder: CloudyKitConfig.decoder)
-            .tryMap { $0.records.compactMap { CKRecord(ckwsRecordResponse: $0) } }
+            .tryMap { response in
+                let records: [CKRecord] = response.records.compactMap { record -> CKRecord? in
+                    CKRecord(ckwsRecordResponse: record)
+                }
+
+                let cursor: CKQueryOperation.Cursor? = response.continuationMarker.flatMap { CKQueryOperation.Cursor(continuationMarker: $0) }
+                let result = (records, cursor)
+
+                return result
+            }
+            .tryMap { response in
+                let records: [(CKRecord.ID, Result<CKRecord, Error>)] = response.0.map { ($0.recordID, .success($0))}
+                let result: (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?) = (records, response.1)
+
+                return result
+            }
             .eraseToAnyPublisher()
     }
-    
+
     internal func saveTaskPublisher(database: CKDatabase, environment: CloudyKitConfig.Environment, record: CKRecord, assetUploadResponses: [(String, CKWSAssetUploadResponse)] = []) -> AnyPublisher<CKRecord, Error> {
         let now = Date()
         let path = "/database/1/\(database.containerIdentifier)/\(environment.rawValue)/\(database.databaseScope.description)/records/modify"
@@ -196,8 +211,15 @@ extension NetworkSession {
         }
         return self.recordTaskPublisher(for: request)
     }
-    
-    internal func queryTaskPublisher(database: CKDatabase, environment: CloudyKitConfig.Environment, query: CKQuery, zoneID: CKRecordZone.ID?) -> AnyPublisher<[CKRecord], Error> {
+
+    internal func queryTaskPublisher(
+        database: CKDatabase,
+        environment: CloudyKitConfig.Environment,
+        query: CKQuery,
+        cursor: CKQueryOperation.Cursor? = nil,
+        zoneID: CKRecordZone.ID?,
+        resultsLimit: Int = CKQueryOperation.maximumResults
+    ) -> AnyPublisher<(matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?), Error> {
         do {
             let now = Date()
             let path = "/database/1/\(database.containerIdentifier)/\(environment.rawValue)/\(database.databaseScope.description)/records/query"
@@ -206,28 +228,34 @@ extension NetworkSession {
             request.addValue("application/json", forHTTPHeaderField: "Content-Type")
             request.addValue(CloudyKitConfig.serverKeyID, forHTTPHeaderField: "X-Apple-CloudKit-Request-KeyID")
             request.addValue(CloudyKitConfig.dateFormatter.string(from: now), forHTTPHeaderField: "X-Apple-CloudKit-Request-ISO8601Date")
+            
             var zoneIDDict: CKWSZoneIDDictionary? = nil
+            
             if let zoneID = zoneID {
                 zoneIDDict = CKWSZoneIDDictionary(zoneName: zoneID.zoneName, ownerName: zoneID.ownerName)
             }
-            // TODO: Support results limit.
+            
             let filterBy = query.predicate.filterBy
             let sortBy = query.sortDescriptors?.compactMap { CKWSSortDescriptorDictionary(fieldName: $0.key, ascending: $0.ascending) }
             let queryDict = try CKWSQueryDictionary(recordType: query.recordType, filterBy: filterBy(), sortBy: sortBy)
-            let queryRequest = CKWSQueryRequest(zoneID: zoneIDDict, resultsLimit: nil, query: queryDict)
+            let queryRequest = CKWSQueryRequest(zoneID: zoneIDDict, resultsLimit: resultsLimit, query: queryDict, continuationMarker: cursor?.continuationMarker)
+
             if let data = try? CloudyKitConfig.encoder.encode(queryRequest), let privateKey = CloudyKitConfig.serverPrivateKey {
                 let signature = CKRequestSignature(data: data, date: now, path: path, privateKey: privateKey)
+            
                 if let signatureValue = try? signature.sign() {
                     request.addValue(signatureValue, forHTTPHeaderField: "X-Apple-CloudKit-Request-SignatureV1")
                 }
+                
                 request.httpBody = data
             }
+
             return self.recordsTaskPublisher(for: request)
         } catch {
             return Fail(error: error).eraseToAnyPublisher()
         }
     }
-    
+
     internal func deleteTaskPublisher(database: CKDatabase, environment: CloudyKitConfig.Environment, recordID: CKRecord.ID) -> AnyPublisher<CKWSRecordResponse, Error> {
         let now = Date()
         let path = "/database/1/\(database.containerIdentifier)/\(environment.rawValue)/\(database.databaseScope.description)/records/modify"

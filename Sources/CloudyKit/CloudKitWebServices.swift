@@ -201,6 +201,7 @@ struct CKWSRecordOperation: Encodable {
 
 struct CKWSRecordResponse: Decodable {
     let records: [CKWSRecordDictionary]
+    let continuationMarker: String?
 }
 
 struct CKWSModifyRecordRequest: Encodable {
@@ -295,4 +296,5 @@ struct CKWSQueryRequest: Encodable {
     let zoneID: CKWSZoneIDDictionary?
     let resultsLimit: Int?
     let query: CKWSQueryDictionary
+    let continuationMarker: String?
 }
