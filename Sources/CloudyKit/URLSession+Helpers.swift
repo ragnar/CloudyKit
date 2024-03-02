@@ -117,7 +117,7 @@ extension NetworkSession {
             .eraseToAnyPublisher()
     }
 
-    internal func saveTaskPublisher(database: CKDatabase, environment: CloudyKitConfig.Environment, record: CKRecord, assetUploadResponses: [(String, CKWSAssetUploadResponse)] = []) -> AnyPublisher<CKRecord, Error> {
+    internal func saveTaskPublisher(database: CKDatabase, environment: CloudyKitConfig.Environment, operationType: CKWSRecordOperation.OperationType? = nil, record: CKRecord, assetUploadResponses: [(String, CKWSAssetUploadResponse)] = []) -> AnyPublisher<CKRecord, Error> {
         let now = Date()
         let path = "/database/1/\(database.containerIdentifier)/\(environment.rawValue)/\(database.databaseScope.description)/records/modify"
         var request = URLRequest(url: URL(string: "\(CloudyKitConfig.host)\(path)")!)
@@ -175,7 +175,7 @@ extension NetworkSession {
                                                     created: nil,
                                                     serverErrorCode: nil,
                                                     reason: nil)
-        let operationType: CKWSRecordOperation.OperationType = record.creationDate == nil ? .create : .update
+        let operationType: CKWSRecordOperation.OperationType = operationType ?? (record.creationDate == nil ? .create : .update)
         let operation = CKWSRecordOperation(operationType: operationType,
                                             desiredKeys: nil,
                                             record: recordDictionary)

@@ -6,9 +6,9 @@
 //
 
 extension CKDatabase {
-    public func save(_ record: CKRecord) async throws -> CKRecord? {
+    public func save(_ record: CKRecord, operationType: CKWSRecordOperation.OperationType? = nil) async throws -> CKRecord? {
         try await withCheckedThrowingContinuation { continuation in
-            save(record) { record, error in
+            save(record, operationType: operationType) { record, error in
                 if let error {
                     continuation.resume(throwing: error)
                 } else {

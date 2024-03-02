@@ -31,9 +31,8 @@ public class CKDatabase {
     }
     
     var cancellable: AnyCancellable? = nil
-    
-    public func save(_ record: CKRecord, completionHandler: @escaping (CKRecord?, Error?) -> Void) {
-        
+
+    public func save(_ record: CKRecord, operationType: CKWSRecordOperation.OperationType? = nil, completionHandler: @escaping (CKRecord?, Error?) -> Void) {
         // Create publisher for any assets we need to upload.
         let assets = record.fields.compactMapValues { $0 as? CKAsset }
         let assetLists = record.fields
@@ -112,6 +111,7 @@ public class CKDatabase {
                 }.flatMap { assetUploadResponses in
                     return CloudyKitConfig.urlSession.saveTaskPublisher(database: self,
                                                                         environment: CloudyKitConfig.environment,
+                                                                        operationType: operationType,
                                                                         record: record,
                                                                         assetUploadResponses: assetUploadResponses)
                 }.sink { completion in
@@ -123,17 +123,22 @@ public class CKDatabase {
                     completionHandler(record, nil)
                 }
         } else {
-            self.cancellable = CloudyKitConfig.urlSession.saveTaskPublisher(database: self, environment: CloudyKitConfig.environment, record: record)
-                .sink(receiveCompletion: { completion in
-                    switch completion {
-                    case .finished:
-                        break
-                    case .failure(let error):
-                        completionHandler(nil, error)
-                    }
-                }, receiveValue: { record in
-                    completionHandler(record, nil)
-                })
+            self.cancellable = CloudyKitConfig.urlSession.saveTaskPublisher(
+                database: self,
+                environment: CloudyKitConfig.environment,
+                operationType: operationType,
+                record: record
+            )
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                case .finished:
+                    break
+                case let .failure(error):
+                    completionHandler(nil, error)
+                }
+            }, receiveValue: { record in
+                completionHandler(record, nil)
+            })
         }
     }
     
