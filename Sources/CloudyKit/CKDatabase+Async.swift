@@ -30,9 +30,9 @@ extension CKDatabase {
         }
     }
 
-    public func delete(withRecordID recordID: CKRecord.ID) async throws -> CKRecord.ID? {
+    public func delete(withRecordID recordID: CKRecord.ID, operationType: CKWSRecordOperation.OperationType? = nil) async throws -> CKRecord.ID? {
         try await withCheckedThrowingContinuation { continuation in
-            delete(withRecordID: recordID) { recordID, error in
+            delete(withRecordID: recordID, operationType: operationType) { recordID, error in
                 if let error {
                     continuation.resume(throwing: error)
                 } else {

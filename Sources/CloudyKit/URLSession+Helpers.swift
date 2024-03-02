@@ -256,7 +256,7 @@ extension NetworkSession {
         }
     }
 
-    internal func deleteTaskPublisher(database: CKDatabase, environment: CloudyKitConfig.Environment, recordID: CKRecord.ID) -> AnyPublisher<CKWSRecordResponse, Error> {
+    internal func deleteTaskPublisher(database: CKDatabase, environment: CloudyKitConfig.Environment, recordID: CKRecord.ID, operationType: CKWSRecordOperation.OperationType? = nil) -> AnyPublisher<CKWSRecordResponse, Error> {
         let now = Date()
         let path = "/database/1/\(database.containerIdentifier)/\(environment.rawValue)/\(database.databaseScope.description)/records/modify"
         var request = URLRequest(url: URL(string: "\(CloudyKitConfig.host)\(path)")!)
@@ -271,7 +271,7 @@ extension NetworkSession {
                                                     created: nil,
                                                     serverErrorCode: nil,
                                                     reason: nil)
-        let operationType: CKWSRecordOperation.OperationType = .forceDelete
+        let operationType: CKWSRecordOperation.OperationType = operationType ?? .forceDelete
         let operation = CKWSRecordOperation(operationType: operationType,
                                             desiredKeys: nil,
                                             record: recordDictionary)

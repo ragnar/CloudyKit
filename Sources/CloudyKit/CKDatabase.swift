@@ -154,9 +154,9 @@ public class CKDatabase {
                 completionHandler(record, nil)
             })
     }
-    
-    public func delete(withRecordID recordID: CKRecord.ID, completionHandler: @escaping (CKRecord.ID?, Error?) -> Void) {
-        self.cancellable = CloudyKitConfig.urlSession.deleteTaskPublisher(database: self, environment: CloudyKitConfig.environment, recordID: recordID)
+
+    public func delete(withRecordID recordID: CKRecord.ID, operationType: CKWSRecordOperation.OperationType? = nil, completionHandler: @escaping (CKRecord.ID?, Error?) -> Void) {
+        self.cancellable = CloudyKitConfig.urlSession.deleteTaskPublisher(database: self, environment: CloudyKitConfig.environment, recordID: recordID, operationType: operationType)
             .sink(receiveCompletion: { completion in
                 switch completion {
                 case .finished:
