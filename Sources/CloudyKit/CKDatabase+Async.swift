@@ -79,4 +79,17 @@ extension CKDatabase {
             }
         }
     }
+
+    public func modifyRecords(saving recordsToSave: [CKRecord]) async throws -> [CKRecord.ID: Result<CKRecord, Error>] {
+        try await withCheckedThrowingContinuation { contiunation in
+            save(records: recordsToSave, operationType: .forceUpdate) { result in
+                switch result {
+                case .success(let values):
+                    contiunation.resume(returning: Dictionary(values) { $1 })
+                case .failure(let failure):
+                    contiunation.resume(throwing: failure)
+                }
+            }
+        }
+    }
 }

@@ -142,6 +142,136 @@ public class CKDatabase {
         }
     }
     
+    public func save(records: [CKRecord], operationType: CKWSRecordOperation.OperationType? = nil, completionHandler: @escaping (Result<[(CKRecord.ID, Result<CKRecord, Error>)], Error>) -> Void) {
+        // Create publisher for any assets we need to upload.
+
+        if records.isEmpty {
+            completionHandler(.success([]))
+            return
+        } else if records.count == 1, let record = records.first {
+            save(record, operationType: operationType) { updated, error in
+                if let updated {
+                    completionHandler(.success([(record.recordID, .success(updated))]))
+                }
+                if let error {
+                    completionHandler(.failure(error))
+                }
+            }
+            return
+        }
+
+        let assets = Dictionary(records.compactMap { $0.fields.compactMapValues { $0 as? CKAsset }}.flatMap { $0 }) { $1 }
+        let assetLists = Dictionary(records.compactMap { $0.fields.compactMapValues { $0 as? [CKAsset] }}.flatMap { $0 }) { $1 }
+
+//        if assets.count + assetLists.count > 0 {
+//            var dictionarys: [CKWSAssetFieldDictionary] = assets.compactMap { fieldName, _ in
+//                CKWSAssetFieldDictionary(recordName: record.recordID.recordName,
+//                                         recordType: record.recordType,
+//                                         fieldName: fieldName)
+//            }
+//
+//            let dictionaryLists: [[CKWSAssetFieldDictionary]] = assetLists.compactMap { fieldName, value in
+//                let dict = CKWSAssetFieldDictionary(recordName: record.recordID.recordName,
+//                                                    recordType: record.recordType,
+//                                                    fieldName: fieldName)
+//                return Array(repeating: dict, count: value.count)
+//            }
+//
+//            for list in dictionaryLists {
+//                dictionarys.append(contentsOf: list)
+//            }
+//
+//            let tokenRequest = CKWSAssetTokenRequest(tokens: dictionarys)
+//            let publisher = CloudyKitConfig.urlSession.requestAssetTokenTaskPublisher(database: self,
+//                                                                                      environment: CloudyKitConfig.environment,
+//                                                                                      tokenRequest: tokenRequest)
+//
+//            cancellable = publisher.decode(type: CKWSTokenResponse.self, decoder: CloudyKitConfig.decoder)
+//                .flatMap { tokenResponse -> AnyPublisher<[(String, CKWSAssetUploadResponse)], Error> in
+//                    var usedFileURLs: [String: [URL]] = [:]
+//                    let publishers: [AnyPublisher<(String, CKWSAssetUploadResponse), Error>] = tokenResponse.tokens.compactMap { token in
+//                        let assetListURL = assetLists[token.fieldName]?.first(where: {
+//                            guard let fileURL = $0.fileURL else {
+//                                return false
+//                            }
+//                            if let usedURLs = usedFileURLs[token.fieldName] {
+//                                return !usedURLs.contains(fileURL)
+//                            }
+//                            return true
+//                        })?.fileURL
+//                        guard let tokenURL = URL(string: token.url),
+//                              let fileURL = assets[token.fieldName]?.fileURL ?? assetListURL,
+//                              let data = try? Data(contentsOf: fileURL)
+//                        else {
+//                            return nil
+//                        }
+//                        if var usedURLs = usedFileURLs[token.fieldName] {
+//                            usedURLs.append(fileURL)
+//                            usedFileURLs[token.fieldName] = usedURLs
+//                        } else {
+//                            usedFileURLs[token.fieldName] = [fileURL]
+//                        }
+//                        let boundary = UUID().uuidString
+//                        var request = URLRequest(url: tokenURL)
+//                        request.httpMethod = "POST"
+//                        request.addValue("application/json", forHTTPHeaderField: "Accept")
+//                        request.addValue("multipart/form-data; boundary=----\(boundary)", forHTTPHeaderField: "Content-Type")
+//                        var body = "------\(boundary)\r\n".data(using: .utf8) ?? Data()
+//                        body.append("Content-Disposition: form-data; name=\"files\"; filename=\"\(fileURL.lastPathComponent)\"\r\n\r\n".data(using: .utf8) ?? Data())
+//                        body.append(data)
+//                        body.append("\r\n------\(boundary)--\r\n".data(using: .utf8) ?? Data())
+//                        request.httpBody = body
+//                        return CloudyKitConfig.urlSession.successfulDataTaskPublisher(for: request)
+//                            .decode(type: CKWSAssetUploadResponse.self, decoder: CloudyKitConfig.decoder)
+//                            .map { (token.fieldName, $0) }
+//                            .eraseToAnyPublisher()
+//                    }
+//#if os(Linux)
+//                    // TODO: OpenCombine does not yet support Publishers.MergeMany. Only uploading
+//                    //       the first asset. https://github.com/OpenCombine/OpenCombine/issues/141
+//                    let publisher = publishers.first?.eraseToAnyPublisher() ?? Empty<(String, CKWSAssetUploadResponse), Error>().eraseToAnyPublisher()
+//                    return publisher
+//                        .map { [$0] }
+//                        .eraseToAnyPublisher()
+//#else
+//                    return Publishers.MergeMany(publishers)
+//                        .collect()
+//                        .eraseToAnyPublisher()
+//#endif
+//                }.flatMap { assetUploadResponses in
+//                    CloudyKitConfig.urlSession.saveTaskPublisher(database: self,
+//                                                                 environment: CloudyKitConfig.environment,
+//                                                                 operationType: operationType,
+//                                                                 record: record,
+//                                                                 assetUploadResponses: assetUploadResponses)
+//                }.sink { completion in
+//                    switch completion {
+//                    case let .failure(error): completionHandler(nil, error)
+//                    default: break
+//                    }
+//                } receiveValue: { record in
+//                    completionHandler(record, nil)
+//                }
+//        } else {
+        self.cancellable = CloudyKitConfig.urlSession.saveTaskPublisher(
+            database: self,
+            environment: CloudyKitConfig.environment,
+            operationType: operationType,
+            records: records
+        )
+        .sink(receiveCompletion: { completion in
+            switch completion {
+            case .finished:
+                break
+            case let .failure(error):
+                completionHandler(.failure(error))
+            }
+        }, receiveValue: { records in
+            completionHandler(.success(records))
+        })
+//        }
+    }
+
     public func fetch(withRecordID recordID: CKRecord.ID, completionHandler: @escaping (CKRecord?, Error?) -> Void) {
         self.cancellable = CloudyKitConfig.urlSession.fetchTaskPublisher(database: self, environment: CloudyKitConfig.environment, recordID: recordID)
             .sink(receiveCompletion: { completion in
