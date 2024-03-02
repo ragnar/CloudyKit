@@ -183,8 +183,8 @@ struct CKWSRecordDictionary: Codable {
     let reason: String?
 }
 
-struct CKWSRecordOperation: Encodable {
-    enum OperationType: String, Encodable {
+public struct CKWSRecordOperation: Encodable {
+    public enum OperationType: String, Encodable {
         case create = "create"
         case update = "update"
         case forceUpdate = "forceUpdate"
