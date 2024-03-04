@@ -92,4 +92,17 @@ extension CKDatabase {
             }
         }
     }
+
+    public func modifyRecords(deleting recordsToDelete: [CKRecord.ID]) async throws -> [CKRecord.ID : Result<Void, Error>] {
+        try await withCheckedThrowingContinuation { contiunation in
+            delete(withRecordIDs: recordsToDelete, operationType: .forceDelete) { result in
+                switch result {
+                case .success(let values):
+                    contiunation.resume(returning: Dictionary(values) { $1 })
+                case .failure(let failure):
+                    contiunation.resume(throwing: failure)
+                }
+            }
+        }
+    }
 }

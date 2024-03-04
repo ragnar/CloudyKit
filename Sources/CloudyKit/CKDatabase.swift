@@ -286,7 +286,7 @@ public class CKDatabase {
     }
 
     public func delete(withRecordID recordID: CKRecord.ID, operationType: CKWSRecordOperation.OperationType? = nil, completionHandler: @escaping (CKRecord.ID?, Error?) -> Void) {
-        self.cancellable = CloudyKitConfig.urlSession.deleteTaskPublisher(database: self, environment: CloudyKitConfig.environment, recordID: recordID, operationType: operationType)
+        self.cancellable = CloudyKitConfig.urlSession.deleteTaskPublisher(database: self, environment: CloudyKitConfig.environment, recordIDs: [recordID], operationType: operationType)
             .sink(receiveCompletion: { completion in
                 switch completion {
                 case .finished:
@@ -295,15 +295,39 @@ public class CKDatabase {
                     completionHandler(nil, error)
                 }
             }, receiveValue: { response in
-                guard let responseRecord = response.records.first else {
+                if response.isEmpty {
                     completionHandler(nil, CKError(code: .internalError, userInfo: [:]))
                     return
                 }
-                let recordID = CKRecord.ID(recordName: responseRecord.recordName)
+
                 completionHandler(recordID, nil)
             })
     }
-    
+
+    public func delete(withRecordIDs recordIDs: [CKRecord.ID], operationType: CKWSRecordOperation.OperationType? = nil, completionHandler: @escaping (Result<[(CKRecord.ID, Result<Void, Error>)], Error>) -> Void) {
+        if recordIDs.isEmpty {
+            completionHandler(.success([]))
+            return
+        }
+
+        self.cancellable = CloudyKitConfig.urlSession.deleteTaskPublisher(database: self, environment: CloudyKitConfig.environment, recordIDs: recordIDs, operationType: operationType)
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                case .finished:
+                    break
+                case .failure(let error):
+                    completionHandler(.failure(error))
+                }
+            }, receiveValue: { response in
+                if response.isEmpty {
+                    completionHandler(.failure(CKError(code: .internalError, userInfo: [:])))
+                    return
+                }
+
+                completionHandler(.success(response))
+            })
+    }
+
     public func perform(_ query: CKQuery, inZoneWith zoneID: CKRecordZone.ID?, completionHandler: @escaping ([CKRecord]?, Error?) -> Void) {
         perform(query, inZoneWith: zoneID) { result in
             switch result {

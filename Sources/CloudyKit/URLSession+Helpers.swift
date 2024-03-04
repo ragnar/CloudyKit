@@ -381,7 +381,7 @@ extension NetworkSession {
         }
     }
 
-    internal func deleteTaskPublisher(database: CKDatabase, environment: CloudyKitConfig.Environment, recordID: CKRecord.ID, operationType: CKWSRecordOperation.OperationType? = nil) -> AnyPublisher<CKWSRecordResponse, Error> {
+    internal func deleteTaskPublisher(database: CKDatabase, environment: CloudyKitConfig.Environment, recordIDs: [CKRecord.ID], operationType: CKWSRecordOperation.OperationType? = nil) -> AnyPublisher<[(CKRecord.ID, Result<Void, Error>)], Error> {// AnyPublisher<CKWSRecordResponse, Error> {
         let now = Date()
         let path = "/database/1/\(database.containerIdentifier)/\(environment.rawValue)/\(database.databaseScope.description)/records/modify"
         var request = URLRequest(url: URL(string: "\(CloudyKitConfig.host)\(path)")!)
@@ -389,18 +389,25 @@ extension NetworkSession {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(CloudyKitConfig.serverKeyID, forHTTPHeaderField: "X-Apple-CloudKit-Request-KeyID")
         request.addValue(CloudyKitConfig.dateFormatter.string(from: now), forHTTPHeaderField: "X-Apple-CloudKit-Request-ISO8601Date")
-        let recordDictionary = CKWSRecordDictionary(recordName: recordID.recordName,
-                                                    recordType: nil,
-                                                    recordChangeTag: nil,
-                                                    fields: nil,
-                                                    created: nil,
-                                                    serverErrorCode: nil,
-                                                    reason: nil)
-        let operationType: CKWSRecordOperation.OperationType = operationType ?? .forceDelete
-        let operation = CKWSRecordOperation(operationType: operationType,
-                                            desiredKeys: nil,
-                                            record: recordDictionary)
-        let modifyRequest = CKWSModifyRecordRequest(operations: [operation])
+
+        var operations = recordIDs.map { recordID in
+            let recordDictionary = CKWSRecordDictionary(recordName: recordID.recordName,
+                                                        recordType: nil,
+                                                        recordChangeTag: nil,
+                                                        fields: nil,
+                                                        created: nil,
+                                                        serverErrorCode: nil,
+                                                        reason: nil)
+            let operationType: CKWSRecordOperation.OperationType = operationType ?? .forceDelete
+            let operation = CKWSRecordOperation(operationType: operationType,
+                                                desiredKeys: nil,
+                                                record: recordDictionary)
+
+            return operation
+        }
+
+        let modifyRequest = CKWSModifyRecordRequest(operations: operations)
+
         if let data = try? CloudyKitConfig.encoder.encode(modifyRequest), let privateKey = CloudyKitConfig.serverPrivateKey {
             let signature = CKRequestSignature(data: data, date: now, path: path, privateKey: privateKey)
             if let signatureValue = try? signature.sign() {
@@ -410,6 +417,25 @@ extension NetworkSession {
         }
         return self.successfulDataTaskPublisher(for: request)
             .decode(type: CKWSRecordResponse.self, decoder: CloudyKitConfig.decoder)
+            .tryMap { response in
+                var result = [(CKRecord.ID, Result<Void, Error>)]()
+
+                for record in response.records {
+                    let recordID = CKRecord.ID(recordName: record.recordName)
+
+                    if let errorCode = record.serverErrorCode {
+                        if errorCode == "NOT_FOUND" {
+                            result.append((recordID, .failure(CKError(code: .unknownItem, userInfo: [:]))))
+                        } else {
+                            result.append((recordID, .failure(CKError(code: .internalError, userInfo: [:]))))
+                        }
+                    } else {
+                        result.append((recordID, .success(Void())))
+                    }
+                }
+
+                return result
+            }
             .eraseToAnyPublisher()
     }
 

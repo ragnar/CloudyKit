@@ -11,7 +11,7 @@ public class CKRecord {
     
     public typealias RecordType = String
     
-    public class ID {
+    public final class ID {
         public let recordName: String
         public init(recordName: String = UUID().uuidString) {
             self.recordName = recordName
@@ -89,6 +89,8 @@ public class CKRecord {
     }
     
 }
+
+extension CKRecord.ID: Codable {}
 
 extension CKRecord.ID: Equatable {
     public static func == (lhs: CKRecord.ID, rhs: CKRecord.ID) -> Bool {
