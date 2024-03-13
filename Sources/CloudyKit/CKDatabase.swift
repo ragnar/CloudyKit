@@ -342,12 +342,13 @@ public class CKDatabase {
         }
     }
 
-    public func perform(_ query: CKQuery, inZoneWith zoneID: CKRecordZone.ID?, resultsLimit: Int = CKQueryOperation.maximumResults, completionHandler: @escaping (Result<(matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?), Error>) -> Void) {
+    public func perform(_ query: CKQuery, inZoneWith zoneID: CKRecordZone.ID?, desiredKeys: [CKRecord.FieldKey]? = nil, resultsLimit: Int = CKQueryOperation.maximumResults, completionHandler: @escaping (Result<(matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?), Error>) -> Void) {
         self.cancellable = CloudyKitConfig.urlSession.queryTaskPublisher(
             database: self,
             environment: CloudyKitConfig.environment,
             query: query,
             zoneID: zoneID,
+            desiredKeys: desiredKeys,
             resultsLimit: resultsLimit
         )
         .sink(receiveCompletion: { completion in
@@ -362,13 +363,14 @@ public class CKDatabase {
         })
     }
 
-    public func fetch(_ query: CKQuery, withCursor queryCursor: CKQueryOperation.Cursor, resultsLimit: Int = CKQueryOperation.maximumResults, completionHandler: @escaping @Sendable (Result<(matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?), Error>) -> Void) {
+    public func fetch(_ query: CKQuery, withCursor queryCursor: CKQueryOperation.Cursor, desiredKeys: [CKRecord.FieldKey]? = nil, resultsLimit: Int = CKQueryOperation.maximumResults, completionHandler: @escaping @Sendable (Result<(matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?), Error>) -> Void) {
         self.cancellable = CloudyKitConfig.urlSession.queryTaskPublisher(
             database: self,
             environment: CloudyKitConfig.environment,
             query: query,
             cursor: queryCursor,
             zoneID: nil,
+            desiredKeys: desiredKeys,
             resultsLimit: resultsLimit
         )
         .sink(receiveCompletion: { completion in

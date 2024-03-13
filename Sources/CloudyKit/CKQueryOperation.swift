@@ -20,6 +20,7 @@ public class CKQueryOperation {
 
     public var query: CKQuery?
     public var cursor: CKQueryOperation.Cursor?
+    public var desiredKeys: [CKRecord.FieldKey]?
 
     public convenience init(query: CKQuery) {
         self.init()

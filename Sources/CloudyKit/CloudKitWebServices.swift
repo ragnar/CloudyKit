@@ -195,7 +195,7 @@ public struct CKWSRecordOperation: Encodable {
     }
     
     let operationType: OperationType
-    let desiredKeys: [String]?
+    let desiredKeys: [CKRecord.FieldKey]?
     let record: CKWSRecordDictionary
 }
 
@@ -297,4 +297,5 @@ struct CKWSQueryRequest: Encodable {
     let resultsLimit: Int?
     let query: CKWSQueryDictionary
     let continuationMarker: String?
+    let desiredKeys: [CKRecord.FieldKey]?
 }

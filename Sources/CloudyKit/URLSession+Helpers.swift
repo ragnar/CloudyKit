@@ -343,6 +343,7 @@ extension NetworkSession {
         query: CKQuery,
         cursor: CKQueryOperation.Cursor? = nil,
         zoneID: CKRecordZone.ID?,
+        desiredKeys: [CKRecord.FieldKey]? = nil,
         resultsLimit: Int = CKQueryOperation.maximumResults
     ) -> AnyPublisher<(matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?), Error> {
         do {
@@ -363,7 +364,7 @@ extension NetworkSession {
             let filterBy = query.predicate.filterBy
             let sortBy = query.sortDescriptors?.compactMap { CKWSSortDescriptorDictionary(fieldName: $0.key, ascending: $0.ascending) }
             let queryDict = try CKWSQueryDictionary(recordType: query.recordType, filterBy: filterBy(), sortBy: sortBy)
-            let queryRequest = CKWSQueryRequest(zoneID: zoneIDDict, resultsLimit: resultsLimit, query: queryDict, continuationMarker: cursor?.continuationMarker)
+            let queryRequest = CKWSQueryRequest(zoneID: zoneIDDict, resultsLimit: resultsLimit, query: queryDict, continuationMarker: cursor?.continuationMarker, desiredKeys: desiredKeys)
 
             if let data = try? CloudyKitConfig.encoder.encode(queryRequest), let privateKey = CloudyKitConfig.serverPrivateKey {
                 let signature = CKRequestSignature(data: data, date: now, path: path, privateKey: privateKey)

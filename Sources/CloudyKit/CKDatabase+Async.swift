@@ -54,9 +54,9 @@ extension CKDatabase {
         }
     }
 
-    public func records(matching query: CKQuery, inZoneWith zoneID: CKRecordZone.ID? = nil, resultsLimit: Int = CKQueryOperation.maximumResults) async throws -> (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?) {
+    public func records(matching query: CKQuery, inZoneWith zoneID: CKRecordZone.ID? = nil, desiredKeys: [CKRecord.FieldKey]? = nil, resultsLimit: Int = CKQueryOperation.maximumResults) async throws -> (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?) {
         try await withCheckedThrowingContinuation { contiunation in
-            perform(query, inZoneWith: zoneID, resultsLimit: resultsLimit) { result in
+            perform(query, inZoneWith: zoneID, desiredKeys: desiredKeys, resultsLimit: resultsLimit) { result in
                 switch result {
                 case .success(let result):
                     contiunation.resume(returning: result)
@@ -67,9 +67,9 @@ extension CKDatabase {
         }
     }
 
-    public func records(matching query: CKQuery, continuingMatchFrom queryCursor: CKQueryOperation.Cursor, resultsLimit: Int = CKQueryOperation.maximumResults) async throws -> (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?) {
+    public func records(matching query: CKQuery, continuingMatchFrom queryCursor: CKQueryOperation.Cursor, desiredKeys: [CKRecord.FieldKey]? = nil, resultsLimit: Int = CKQueryOperation.maximumResults) async throws -> (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?) {
         try await withCheckedThrowingContinuation { contiunation in
-            fetch(query, withCursor: queryCursor, resultsLimit: resultsLimit) { result in
+            fetch(query, withCursor: queryCursor, desiredKeys: desiredKeys, resultsLimit: resultsLimit) { result in
                 switch result {
                 case .success(let result):
                     contiunation.resume(returning: result)
