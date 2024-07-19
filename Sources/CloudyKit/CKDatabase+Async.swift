@@ -42,6 +42,19 @@ extension CKDatabase {
         }
     }
 
+    public func delete(withRecordIDs recordIDs: [CKRecord.ID], operationType: CKWSRecordOperation.OperationType? = nil) async throws -> [CKRecord.ID : Result<Void, Error>] {
+        try await withCheckedThrowingContinuation { continuation in
+            delete(withRecordIDs: recordIDs, operationType: operationType) { result in
+                switch result {
+                case .success(let values):
+                    continuation.resume(returning: Dictionary(values) { $1 })
+                case .failure(let failure):
+                    continuation.resume(throwing: failure)
+                }
+            }
+        }
+    }
+
     public func perform(_ query: CKQuery, inZoneWith zoneID: CKRecordZone.ID?) async throws -> [CKRecord]? {
         try await withCheckedThrowingContinuation { continuation in
             perform(query, inZoneWith: zoneID) { records, error in
