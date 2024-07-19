@@ -204,11 +204,10 @@ extension NetworkSession {
             .tryMap { result -> CKRecord in
                 guard 
                     let first = result.first?.1,
-                    let value = try first.get() as? CKRecord
+                    let value = try? first.get()
                 else {
                     throw CKError(code: CKError.Code.internalError, userInfo: [:])
                 }
-
 
                 return value
             }
@@ -324,11 +323,10 @@ extension NetworkSession {
             .tryMap { result -> CKRecord in
                 guard
                     let first = result.first?.1,
-                    let value = try first.get() as? CKRecord
+                    let value = try? first.get()
                 else {
                     throw CKError(code: CKError.Code.internalError, userInfo: [:])
                 }
-
 
                 return value
             }
@@ -391,7 +389,7 @@ extension NetworkSession {
         request.addValue(CloudyKitConfig.serverKeyID, forHTTPHeaderField: "X-Apple-CloudKit-Request-KeyID")
         request.addValue(CloudyKitConfig.dateFormatter.string(from: now), forHTTPHeaderField: "X-Apple-CloudKit-Request-ISO8601Date")
 
-        var operations = recordIDs.map { recordID in
+        let operations = recordIDs.map { recordID in
             let recordDictionary = CKWSRecordDictionary(recordName: recordID.recordName,
                                                         recordType: nil,
                                                         recordChangeTag: nil,
