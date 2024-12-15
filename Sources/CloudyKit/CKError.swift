@@ -8,7 +8,7 @@
 import Foundation
 
 public struct CKError: Error {
-    public enum Code: Int {
+    public enum Code: Int, Sendable {
         case internalError = 1
         case unknownItem = 11
         case invalidArguments = 12
@@ -28,9 +28,9 @@ public struct CKError: Error {
     }
     
     internal let code: Code
-    internal let userInfo: [String:Any]
-    
-    internal init(code: Code, userInfo: [String:Any]) {
+    internal let userInfo: [String: Any & Sendable]
+
+    internal init(code: Code, userInfo: [String: Any & Sendable]) {
         self.code = code
         self.userInfo = userInfo
     }

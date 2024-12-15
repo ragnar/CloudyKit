@@ -7,8 +7,8 @@
 
 import Foundation
 
-public class CKQueryOperation {
-    public class Cursor {
+public final class CKQueryOperation: @unchecked Sendable {
+    public final class Cursor: Sendable {
         internal let continuationMarker: String
 
         public init(continuationMarker: String) {

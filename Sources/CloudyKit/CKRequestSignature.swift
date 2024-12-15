@@ -9,8 +9,7 @@ import Foundation
 import Cryptor
 import CryptorECC
 
-class CKRequestSignature {
-    
+final class CKRequestSignature {
     let data: Data
     let date: Date
     let path: String
@@ -23,6 +22,7 @@ class CKRequestSignature {
         self.privateKey = privateKey
     }
     
+    @MainActor
     func sign() throws -> String {
         let digest = Digest(using: .sha256)
         guard let dataDigest = digest.update(data: data) else {

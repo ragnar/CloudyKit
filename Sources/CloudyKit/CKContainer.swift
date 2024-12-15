@@ -7,8 +7,8 @@
 
 import Foundation
 
-public class CKContainer {
-    
+@MainActor
+public final class CKContainer: Sendable {
     public let containerIdentifier: String
     public let publicDatabase: CKDatabase
     

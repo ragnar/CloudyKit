@@ -13,8 +13,8 @@ import OpenCombine
 import Combine
 #endif
 
-public class CKDatabase {
-    
+@MainActor
+public final class CKDatabase: @unchecked Sendable {
     public enum Scope: Int {
         case `public` = 1
         case `private` = 2
@@ -328,7 +328,7 @@ public class CKDatabase {
             })
     }
 
-    public func perform(_ query: CKQuery, inZoneWith zoneID: CKRecordZone.ID?, completionHandler: @escaping ([CKRecord]?, Error?) -> Void) {
+    public func perform(_ query: CKQuery, inZoneWith zoneID: CKRecordZone.ID?, completionHandler: @Sendable @escaping ([CKRecord]?, Error?) -> Void) {
         perform(query, inZoneWith: zoneID) { result in
             switch result {
             case .failure(let error):
@@ -342,7 +342,7 @@ public class CKDatabase {
         }
     }
 
-    public func perform(_ query: CKQuery, inZoneWith zoneID: CKRecordZone.ID?, desiredKeys: [CKRecord.FieldKey]? = nil, resultsLimit: Int = CKQueryOperation.maximumResults, completionHandler: @escaping (Result<(matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?), Error>) -> Void) {
+    public func perform(_ query: CKQuery, inZoneWith zoneID: CKRecordZone.ID?, desiredKeys: [CKRecord.FieldKey]? = nil, resultsLimit: Int = CKQueryOperation.maximumResults, completionHandler: @Sendable @escaping (Result<(matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?), Error>) -> Void) {
         self.cancellable = CloudyKitConfig.urlSession.queryTaskPublisher(
             database: self,
             environment: CloudyKitConfig.environment,

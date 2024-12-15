@@ -17,7 +17,7 @@ extension CKWSErrorResponse {
     
     var ckError: CKError {
         if self.serverErrorCode == "BAD_REQUEST" {
-            var userInfo: [String:Any] = [:]
+            var userInfo: [String: Any & Sendable] = [:]
             if reason == "Queried type is not marked indexable" {
                 userInfo[NSLocalizedDescriptionKey] = "Type is not marked indexable"
             } else {

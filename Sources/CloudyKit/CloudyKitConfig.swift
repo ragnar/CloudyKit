@@ -3,8 +3,8 @@ import Foundation
 import FoundationNetworking
 #endif
 
-public class CloudyKitConfig {
-    
+@MainActor
+public final class CloudyKitConfig: @unchecked Sendable {
     public enum Environment: String {
         case development = "development"
         case production = "production"

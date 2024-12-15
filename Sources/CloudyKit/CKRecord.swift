@@ -7,11 +7,11 @@
 
 import Foundation
 
-public class CKRecord {
+public final class CKRecord: @unchecked Sendable {
     public typealias RecordType = String
     public typealias FieldKey = String
 
-    public final class ID {
+    public final class ID: Sendable {
         public let recordName: String
         public init(recordName: String = UUID().uuidString) {
             self.recordName = recordName

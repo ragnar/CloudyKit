@@ -19,7 +19,7 @@ enum NetworkSessionError: Error {
 }
 
 internal protocol NetworkSession {
-    func internalDataTask(with request: URLRequest, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) -> NetworkSessionDataTask
+    func internalDataTask(with request: URLRequest, completionHandler: @Sendable @escaping (Data?, URLResponse?, Error?) -> Void) -> NetworkSessionDataTask
     func internalDataTaskPublisher(for request: URLRequest) -> AnyPublisher<(data: Data, response: URLResponse), Error>
 }
 
@@ -28,7 +28,7 @@ internal protocol NetworkSessionDataTask {
 }
 
 extension URLSession: NetworkSession {
-    func internalDataTask(with request: URLRequest, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) -> NetworkSessionDataTask {
+    func internalDataTask(with request: URLRequest, completionHandler: @Sendable @escaping (Data?, URLResponse?, Error?) -> Void) -> NetworkSessionDataTask {
         return self.dataTask(with: request, completionHandler: completionHandler)
     }
     
@@ -41,6 +41,7 @@ extension URLSession: NetworkSession {
 
 extension URLSessionDataTask: NetworkSessionDataTask { }
 
+@MainActor
 extension NetworkSession {
     internal func successfulDataTaskPublisher(for request: URLRequest) -> AnyPublisher<Data, Error> {
         return self.internalDataTaskPublisher(for: request)
